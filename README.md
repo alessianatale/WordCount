@@ -19,8 +19,8 @@
 ## Problema
 Il progetto prevede la realizzazione di un programma che conti il numero di parole all'interno di file di testo utilizzando un approccio parallelo e distribuito attraverso Open MPI.
 In particolare il programma è diviso in 3 step:
-- il master legge la directory contenente tutti i file di testo e divide i file in modo tale che ogni precesso ne avrà una parte da cui dovrà contare la frequenza con la quale si ripete ogni parola
-- i processi inviano le frequenze al master che le combinerà insieme
+- il master legge la directory contenente tutti i file di testo e divide i file in modo tale che ogni processore ne avrà una parte da cui dovrà contare la frequenza con la quale si ripete ogni parola
+- i processori inviano le frequenze al master che le combinerà insieme
 - il master crea un file csv contenente tutte le parole con le relative frequenze
 
 ## Installazione
@@ -62,7 +62,7 @@ Dove i parametri sono:
 > ``` 
 
 ## Soluzione proposta
-La realizzazione del progamma che conta il numero di parole all'interno di file di testo è stata fatta eseguendo una divisione dei file attraverso il numero di parole, in particolare vengono prese e salvate tutte le parole di ciascun file e, successivamente, vengono divise in base al numero totale tra i vari processi.
+La realizzazione del progamma che conta il numero di parole all'interno di file di testo è stata fatta eseguendo una divisione dei file attraverso il numero di parole, in particolare vengono prese e salvate tutte le parole di ciascun file e, successivamente, vengono divise in base al numero totale tra i vari processori.
 
 Le parole vengono estratte dai file di testo senza vincoli di formattazione, non è necessario che siano divise solo da spazi, ma può essere presente qualsiasi segno di punteggiatura che separa le parole, di seguito i delimitatori considerati:
 ```c
@@ -91,16 +91,16 @@ Per le parole invece nella struct 'word' c'è:
 
 L'implementazione consiste dei seguenti step:
 
-1. Salvataggio parole e divisione per processi
+1. Salvataggio parole e divisione per processori
 
-2. Invio porzione di parole ai processi
+2. Invio porzione di parole ai processori
 
 3. Conteggio frequenze ed invio al MASTER
 
 4. Conteggio frequenze totali e creazione csv
 
 ### Dettagli implementazione
-**1. Salvataggio parole e divisione per processi**
+**1. Salvataggio parole e divisione per processori**
 
 Dopo aver preso ogni file di testo e salvato nell'array **files**
 - per salvare le parole viene utilizzata la seguente funzione:
@@ -114,21 +114,21 @@ dove al suo interno vengono prese le parole ignorando i segni di punteggiatura c
 ```c
 splitWords(words->nwords, nproc, elements_per_process, displs);
 ```
-dove vengono salvati il numero di parole per ogni processo in **elements_per_process** e i displacements in **displs**.
+dove vengono salvati il numero di parole per ogni processore in **elements_per_process** e i displacements in **displs**.
 
 
-**2. Invio porzione di parole ai processi**
+**2. Invio porzione di parole ai processori**
 
-Per inviare la parte di parole ad ogni processo viene utilizzata la Scatterv:
+Per inviare la parte di parole ad ogni processore viene utilizzata la Scatterv:
 ```c
 MPI_Scatterv(words, elements_per_process, displs, MPI_WORD, recvwords, nwordsproc, MPI_WORD, 0, MPI_COMM_WORLD);
 ```
-In questo modo **recvwords** (struct word) contiene solo un certo numero di parole, calcolato precedentemente in base al numero di processi.
+In questo modo **recvwords** (struct word) contiene solo un certo numero di parole, calcolato precedentemente in base al numero di processori.
 
 
 **3. Conteggio frequenze ed invio al MASTER**
 
-- A questo punto ciascun processo conta le frequenze di ogni porzione proprio, utilizzando la funzione:
+- A questo punto ciascun processore conta le frequenze di ogni porzione proprio, utilizzando la funzione:
 ```c
 countFrequency(nwordsproc, recvwords);
 ```
@@ -187,14 +187,20 @@ Per verificare la correttezza del programma sono stati fatti due test:
 - il primo test prevede l'utilizzo del file **'250nomi_propri.txt'** in **files_correctness** che contiene appunto 250 parole (nomi) 
 
 **output**:
-![Correttezza1](benchmark&co/Correttezza1.png)
-![Correttezza2](benchmark&co/Correttezza2.png)
+
+![Correttezza1](benchmark&co/Correttezza1.PNG)
+
+...
+
+![Correttezza2](benchmark&co/Correttezza2.PNG)
 
 Possiamo notare che il file csv contiene 250 parole (251-1 la prima riga è il titolo) quindi ha stampato correttamente tutte le parole.
 
 - il secondo test prevede l'utilizzo del file **'3parole.txt'** in **files_correctness** che contiene le parole 'gatto' - 'cane' - 'verde' ripetute 10 volte in ordine casuale nel file
 
 **output**:
+
+![Correttezza3](benchmark&co/Correttezza3.PNG)
 
 Dall'output osserviamo che le tre parole sono presenti con tutte frequenza uguale a 10.
 
@@ -203,7 +209,7 @@ Dall'output osserviamo che le tre parole sono presenti con tutte frequenza ugual
 ## Benchmark
 I benchmark sono stati eseguiti su un cluster AWS di 2 istanze m4.xlarge utilizzando i file di testo presenti nelle cartelle **files** e **files_weak**.
 
-Di seguito sono riportati i risultati sia per la strong scalability - stessa grandezza di input ma aumentando il numero di processi, sia per la weak scalability - grandezza di input che aumenta in modo costante con il numero di processi.
+Di seguito sono riportati i risultati sia per la strong scalability - stessa grandezza di input ma aumentando il numero di processori, sia per la weak scalability - grandezza di input che aumenta in modo costante con il numero di processori.
 
 La metrica utilizzata per misurare i risultati è lo **speedup** calcolato come segue:
 
@@ -228,6 +234,10 @@ Di seguito sono riportati i risultati:
 7|4.90|11.08
 8|4.58|11.85
 
+![Strong1](benchmark&co/benchstrong1.png)
+
+![Strong2](benchmark&co/benchstrong2.png)
+
 ### Weak Scalability
 La misurazione della Weak Scalability è stata effettuata eseguendo il programma utilizzando come input i file di testo presenti nella cartella **files_weak** nella quale sono presenti file di testo il cui numero di parole aumenta di 6307 all'aumentare del numero di processori.
 
@@ -243,4 +253,13 @@ Di seguito sono riportati i risultati:
 7|12.28|44149|0.19
 8|14.37|50456|0.16
 
+![Weak1](benchmark&co/benchweak1.png)
+
+![Weak2](benchmark&co/benchweak2.png)
+
 ## Conclusioni
+Dall'analisi dei risultati possiamo notare che:
+- con la **Strong Scalability** l'algoritmo non performa bene con l'utilizzo di 1 precessore in quanto impiega troppo tempo e, dati questi tempi elevati, si verifica uno speedup alto con l'aumentare del numero di processori. Questo significa che l'algoritmo è migliore quando si utilizza un approccio parallelo
+- con la **Weak Scalability** non si sono ottenuti dei buoni risultati in quanto con l'aumentare dei processori lo speedup diminuisce
+
+In conclusione l'esecuzione dell'algoritmo in un ambiente parallelo risulta avere dei vantaggi.
