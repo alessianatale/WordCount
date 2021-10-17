@@ -184,13 +184,15 @@ Infine salviamo i risultati in un file csv specificato in input.
 
 ## Correttezza
 Per verificare la correttezza del programma sono stati fatti due test:
-- il primo test prevede l'utilizzo del file **'250nomi_propri.txt'** che contiene appunto 250 parole (nomi) 
+- il primo test prevede l'utilizzo del file **'250nomi_propri.txt'** in **files_correctness** che contiene appunto 250 parole (nomi) 
 
 **output**:
+![Correttezza1](benchmark&co/Correttezza1.png)
+![Correttezza2](benchmark&co/Correttezza2.png)
 
 Possiamo notare che il file csv contiene 250 parole (251-1 la prima riga è il titolo) quindi ha stampato correttamente tutte le parole.
 
-- il secondo test prevede l'utilizzo del file **'3parole.txt'** che contiene le parole 'gatto' - 'cane' - 'verde' ripetute 10 volte in ordine casuale nel file
+- il secondo test prevede l'utilizzo del file **'3parole.txt'** in **files_correctness** che contiene le parole 'gatto' - 'cane' - 'verde' ripetute 10 volte in ordine casuale nel file
 
 **output**:
 
