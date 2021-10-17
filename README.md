@@ -11,7 +11,7 @@
 - [Soluzione proposta](#soluzione-proposta)
   * [Dettagli implementazione](#dettagli-implementazione)
 - [Correttezza](#correttezza)
-- [Analisi performance](#analisi-performance)
+- [Benchmark](#benchmark)
   * [Strong Scalability](#strong-scalability)
   * [Weak Scalability](#weak-scalability)
 - [Conclusioni](#conclusioni)
@@ -108,13 +108,13 @@ Dopo aver preso ogni file di testo e salvato nell'array **files**
 word *words;
 words = insertWords(nfiles, files);
 ```
-dove al suo interno vengono prese le parole ignorando i segni di punteggiatura con la funzione **strtok** e salvate in **words**
+dove al suo interno vengono prese le parole ignorando i segni di punteggiatura con la funzione **strtok** e salvate in **words**.
 
 - per dividere le parole tra i processi viene utilizzata la seguente funzione:
 ```c
 splitWords(words->nwords, nproc, elements_per_process, displs);
 ```
-dove vengono salvati il numero di parole per ogni processo in **elements_per_process** e i displacements in **displs**
+dove vengono salvati il numero di parole per ogni processo in **elements_per_process** e i displacements in **displs**.
 
 
 **2. Invio porzione di parole ai processi**
@@ -123,7 +123,7 @@ Per inviare la parte di parole ad ogni processo viene utilizzata la Scatterv:
 ```c
 MPI_Scatterv(words, elements_per_process, displs, MPI_WORD, recvwords, nwordsproc, MPI_WORD, 0, MPI_COMM_WORLD);
 ```
-In questo modo **recvwords** (struct word) contiene solo un certo numero di parole, calcolato precedentemente in base al numero di processi
+In questo modo **recvwords** (struct word) contiene solo un certo numero di parole, calcolato precedentemente in base al numero di processi.
 
 
 **3. Conteggio frequenze ed invio al MASTER**
@@ -184,15 +184,61 @@ Infine salviamo i risultati in un file csv specificato in input.
 
 ## Correttezza
 Per verificare la correttezza del programma sono stati fatti due test:
-- il primo prevede l'utilizzo del file xxx che contiene 
+- il primo test prevede l'utilizzo del file **'250nomi_propri.txt'** che contiene appunto 250 parole (nomi) 
 
+**output**:
+
+Possiamo notare che il file csv contiene 250 parole (251-1 la prima riga è il titolo) quindi ha stampato correttamente tutte le parole.
+
+- il secondo test prevede l'utilizzo del file **'3parole.txt'** che contiene le parole 'gatto' - 'cane' - 'verde' ripetute 10 volte in ordine casuale nel file
+
+**output**:
+
+Dall'output osserviamo che le tre parole sono presenti con tutte frequenza uguale a 10.
 
 > Nota: i test mostrati sono stati effettuati su input piccoli per facilitarne la comprensione
 
-## Analisi performance
+## Benchmark
+I benchmark sono stati eseguiti su un cluster AWS di 2 istanze m4.xlarge utilizzando i file di testo presenti nelle cartelle **files** e **files_weak**.
+
+Di seguito sono riportati i risultati sia per la strong scalability - stessa grandezza di input ma aumentando il numero di processi, sia per la weak scalability - grandezza di input che aumenta in modo costante con il numero di processi.
+
+La metrica utilizzata per misurare i risultati è lo **speedup** calcolato come segue:
+
+`t(1) \ t(N)`
+
+Dove t(1) è il tempo di esecuzione con un processore, mentre t(N) con N processori.
+
+> Le misurazioni sono state effettuate più volte, i tempi mostrati sono una media di tutti i valori registrati.
 
 ### Strong Scalability
+La misurazione della Strong Scalability è stata effettuata eseguendo il programma utilizzando come input i file di testo presenti nella cartella **files**.
+
+Di seguito sono riportati i risultati:
+| NP| Time (Sec) | Speedup
+|:---:|:---:|:---:|
+1|54.29|1.0
+2|14.45|3.76
+3|13.20|4.11
+4|8.73|6.22
+5|6.49|8.36
+6|5.45|9.96
+7|4.90|11.08
+8|4.58|11.85
 
 ### Weak Scalability
+La misurazione della Weak Scalability è stata effettuata eseguendo il programma utilizzando come input i file di testo presenti nella cartella **files_weak** nella quale sono presenti file di testo il cui numero di parole aumenta di 6307 all'aumentare del numero di processori.
+
+Di seguito sono riportati i risultati:
+| NP| Time (Sec) | N words | Speedup
+|:---:|:---:|:---:|:---:|
+1|2.32|6307|1.0
+2|2.86|12614|0.81
+3|6.10|18921|0.38
+4|7.26|25228|0.32
+5|8.75|31535|0.26
+6|10.61|37842|0.22
+7|12.28|44149|0.19
+8|14.37|50456|0.16
 
 ## Conclusioni
